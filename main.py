@@ -9,6 +9,7 @@ from tensorflow.keras import layers, models, losses, callbacks
 import time
 import os
 import matplotlib.pyplot as plt
+import datetime
 
 notes, durations = load_music_data()
 
@@ -33,6 +34,37 @@ def prepare_inputs(notes, durations):
     y = (tokenized_notes[:, 1:], tokenized_durations[:, 1:])
     return x, y
 
+def plot_training_history(history):
+    # Extracting values
+    note_outputs_loss = history.history['note_outputs_loss']
+    duration_outputs_loss = history.history['duration_outputs_loss']
+    note_outputs_accuracy = history.history['note_outputs_accuracy']
+    duration_outputs_accuracy = history.history['duration_outputs_accuracy']
+
+    # Creating subplots
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+    fig.suptitle('Training Metrics')
+
+    # Plotting Loss
+    axes[0].plot(note_outputs_loss, label='Note Outputs Loss')
+    axes[0].plot(duration_outputs_loss, label='Duration Outputs Loss')
+    axes[0].set_title('Loss')
+    axes[0].set_xlabel('Epochs')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+
+    # Plotting Accuracy
+    axes[1].plot(note_outputs_accuracy, label='Note Outputs Accuracy')
+    axes[1].plot(duration_outputs_accuracy, label='Duration Outputs Accuracy')
+    axes[1].set_title('Accuracy')
+    axes[1].set_xlabel('Epochs')
+    axes[1].set_ylabel('Accuracy')
+    axes[1].legend()
+
+    # Show the plots
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('training_loss_accuracy.png')
 
 ds = seq_ds.map(prepare_inputs).repeat(DATASET_REPETITIONS)
 
@@ -61,10 +93,22 @@ model = models.Model(
     outputs=[note_outputs, duration_outputs],  # attention_scores
 )
 
-model.compile(optimizer='adam', loss=[
+model.compile(
+    optimizer='adam', 
+    loss=[
         losses.SparseCategoricalCrossentropy(),
-        losses.SparseCategoricalCrossentropy(),
-    ], metrics=['accuracy'])
+        losses.SparseCategoricalCrossentropy()
+    ],
+    metrics={
+        'note_outputs': ['accuracy'],  # Replace 'note_outputs' with the actual name of your first output
+        'duration_outputs': ['accuracy']  # Replace 'duration_outputs' with the actual name of your second output
+    }
+)
+
+# model.compile(optimizer='adam', loss=[
+#         losses.SparseCategoricalCrossentropy(),
+#         losses.SparseCategoricalCrossentropy(),
+#     ], metrics=['accuracy'])
 
 att_model = models.Model(
     inputs=[note_inputs, durations_inputs], outputs=attention_scores
@@ -85,7 +129,8 @@ else:
         verbose=0,
     )
 
-    tensorboard_callback = callbacks.TensorBoard(log_dir="./logs")
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Tokenize starting prompt
     
@@ -102,33 +147,12 @@ else:
         ],
     )
 
-    loss = history.history['loss']
-    accuracy = history.history['accuracy']
+    note_outputs_loss = history.history['note_outputs_loss']
+    duration_outputs_loss = history.history['duration_outputs_loss']
+    note_outputs_accuracy = history.history['note_outputs_accuracy']
+    duration_outputs_accuracy = history.history['duration_outputs_accuracy']
 
-    # Setting up the range of epochs
-    epochs = range(1, len(loss) + 1)
-
-    # Plotting training loss and accuracy
-    plt.figure(figsize=(12, 6))
-
-    # Loss plot
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs, loss, 'b-', label='Training Loss')
-    plt.title('Training Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    # Accuracy plot
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, accuracy, 'r-', label='Training Accuracy')
-    plt.title('Training Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-
-    # Saving the plot to a PNG file
-    plt.savefig('training_loss_accuracy.png')
+    plot_training_history(history)
 
     ########################
     # Save the final model #
