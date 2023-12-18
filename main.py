@@ -8,6 +8,7 @@ from constants import DATASET_REPETITIONS, EMBEDDING_DIM, EPOCHS, FEED_FORWARD_D
 from tensorflow.keras import layers, models, losses, callbacks
 import time
 import os
+import matplotlib.pyplot as plt
 
 notes, durations = load_music_data()
 
@@ -59,13 +60,12 @@ model = models.Model(
     inputs=[note_inputs, durations_inputs],
     outputs=[note_outputs, duration_outputs],  # attention_scores
 )
-model.compile(
-    "adam",
-    loss=[
+
+model.compile(optimizer='adam', loss=[
         losses.SparseCategoricalCrossentropy(),
         losses.SparseCategoricalCrossentropy(),
-    ],
-)
+    ], metrics=['accuracy'])
+
 att_model = models.Model(
     inputs=[note_inputs, durations_inputs], outputs=attention_scores
 )
@@ -91,7 +91,7 @@ else:
     
     timestamp_callback = TimeStampCallback()
 
-    model.fit(
+    history = model.fit(
         ds,
         epochs=EPOCHS,
         callbacks=[
@@ -101,6 +101,34 @@ else:
             timestamp_callback,
         ],
     )
+
+    loss = history.history['loss']
+    accuracy = history.history['accuracy']
+
+    # Setting up the range of epochs
+    epochs = range(1, len(loss) + 1)
+
+    # Plotting training loss and accuracy
+    plt.figure(figsize=(12, 6))
+
+    # Loss plot
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, loss, 'b-', label='Training Loss')
+    plt.title('Training Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    # Accuracy plot
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, accuracy, 'r-', label='Training Accuracy')
+    plt.title('Training Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    # Saving the plot to a PNG file
+    plt.savefig('training_loss_accuracy.png')
 
     ########################
     # Save the final model #
