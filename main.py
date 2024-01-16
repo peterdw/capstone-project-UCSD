@@ -24,6 +24,7 @@ seq_ds = tf.data.Dataset.zip((notes_seq_ds, durations_seq_ds))
 notes_vocab_size = len(notes_vocab)
 durations_vocab_size = len(durations_vocab)
 
+
 # Create the training set of sequences and the same sequences shifted by one note
 def prepare_inputs(notes, durations):
     notes = tf.expand_dims(notes, -1)
@@ -33,6 +34,7 @@ def prepare_inputs(notes, durations):
     x = (tokenized_notes[:, :-1], tokenized_durations[:, :-1])
     y = (tokenized_notes[:, 1:], tokenized_durations[:, 1:])
     return x, y
+
 
 def plot_training_history(history):
     # Extracting values
@@ -63,8 +65,9 @@ def plot_training_history(history):
 
     # Show the plots
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
     plt.savefig('training_loss_accuracy.png')
+
 
 ds = seq_ds.map(prepare_inputs).repeat(DATASET_REPETITIONS)
 
@@ -94,7 +97,7 @@ model = models.Model(
 )
 
 model.compile(
-    optimizer='adam', 
+    optimizer='adam',
     loss=[
         losses.SparseCategoricalCrossentropy(),
         losses.SparseCategoricalCrossentropy()
@@ -115,7 +118,7 @@ att_model = models.Model(
 )
 
 model.summary()
-#music_generator = MusicGenerator(notes_vocab, durations_vocab)
+# music_generator = MusicGenerator(notes_vocab, durations_vocab)
 music_generator = MusicGenerator(model, notes_vocab, durations_vocab)
 
 if LOAD_MODEL:
@@ -133,7 +136,7 @@ else:
     tensorboard_callback = callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     # Tokenize starting prompt
-    
+
     timestamp_callback = TimeStampCallback()
 
     history = model.fit(
