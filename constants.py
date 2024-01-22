@@ -16,3 +16,4 @@ FEED_FORWARD_DIM    = 256
 EPOCHS              = 1000
 GENERATE_LEN        = 50
 LOAD_MODEL          = False
+SPLIT_RATIO         = 0.2

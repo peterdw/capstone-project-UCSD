@@ -6,6 +6,14 @@ import pickle
 import music21
 from music21 import converter
 from constants import DATASET_FOLDER, PARSE_MIDI_FILES, NOTES_FILE, DURATIONS_FILE, SEQ_LEN
+import pretty_midi
+import numpy as np
+
+def midi_to_piano_roll(midi_path):
+    midi_data = pretty_midi.PrettyMIDI(midi_path)
+    # Assuming you want to work with one instrument
+    piano_roll = midi_data.instruments[0].get_piano_roll(fs=100)
+    return np.array(piano_roll, dtype=np.float32)
 
 def ensure_directory_exists(file_path):
     directory = os.path.dirname(file_path)
@@ -31,7 +39,7 @@ def parse_midi_files(file_list):
         print(f"Parsing {file}")
         score = converter.parse(file).chordify()
 
-        for element in score.flat:
+        for element in score.flatten():
             if isinstance(element, music21.key.Key):
                 notes.append(str(element.tonic.name) + ":" + str(element.mode))
                 durations.append("0.0")
