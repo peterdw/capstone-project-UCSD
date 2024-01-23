@@ -11,16 +11,29 @@ import os
 import datetime
 
 def create_dataset(elements):
+    # Create a TensorFlow dataset from the provided elements
     ds = (
         tf.data.Dataset.from_tensor_slices(elements)
+        # Batch the dataset with a specified BATCH_SIZE, dropping the remainder
         .batch(BATCH_SIZE, drop_remainder=True)
+        # Shuffle the dataset with a buffer size of 1000
         .shuffle(1000)
     )
+
+    # Initialize a TextVectorization layer without any text standardization
+    # and configure it to output integers (int)
     vectorize_layer = layers.TextVectorization(
         standardize=None, output_mode="int"
     )
+
+    # Adapt the vectorization layer to the dataset, creating a vocabulary
+    # based on the dataset
     vectorize_layer.adapt(ds)
+
+    # Retrieve and store the vocabulary from the vectorization layer
     vocab = vectorize_layer.get_vocabulary()
+
+    # Return the dataset, vectorization layer, and the vocabulary
     return ds, vectorize_layer, vocab
 
 
@@ -118,9 +131,7 @@ class SinePositionEncoding(keras.layers.Layer):
         super().__init__(**kwargs)
         self.max_wavelength = max_wavelength
 
-    def call(self, inputs):
-        # TODO(jbischof): replace `hidden_size` with`hidden_dim` for consistency
-        # with other layers.
+    def call(self, inputs, **kwargs):
         input_shape = tf.shape(inputs)
         # length of sequence is the second last dimension of the inputs
         seq_length = input_shape[-2]
@@ -180,7 +191,7 @@ class TransformerBlock(keras.layers.Layer):
         self.dropout_2 = keras.layers.Dropout(self.dropout_rate)
         self.ln_2 = keras.layers.LayerNormalization(epsilon=1e-6)
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         input_shape = tf.shape(inputs)
         batch_size = input_shape[0]
         seq_len = input_shape[1]
@@ -226,7 +237,7 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
         )
         self.pos_emb = SinePositionEncoding()
 
-    def call(self, x):
+    def call(self, x, **kwargs):
         embedding = self.token_emb(x)
         positions = self.pos_emb(embedding)
         return embedding + positions
@@ -240,10 +251,11 @@ class TokenAndPositionEmbedding(keras.layers.Layer):
             }
         )
         return config
-    
+
 
 class MusicGenerator(keras.callbacks.Callback):
     def __init__(self, model, index_to_note, index_to_duration, top_k=10):
+        super().__init__()
         self.index_to_note = index_to_note
         self.model = model
         self.note_to_index = {
@@ -359,22 +371,6 @@ class MusicGenerator(keras.callbacks.Callback):
                 break
 
         return info
-
-    # def on_epoch_end(self, epoch, logs=None):
-    #     info = self.generate(
-    #         ["START"], ["0.0"], max_tokens=GENERATE_LEN, temperature=0.5
-    #     )
-    #     midi_stream = info[-1]["midi"].chordify()
-    #     print(info[-1]["prompt"])
-    #     # midi_stream.show()
-    #     midi_stream.write(
-    #         "midi",
-    #         fp=os.path.join(
-    #             "./output",
-    #             "output-" + str(epoch).zfill(4) + ".mid",
-    #         ),
-    #     )
-
 
 class TimeStampCallback(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):

@@ -67,7 +67,7 @@ def parse_midi_files(file_list):
 
 def load_music_data():
     if PARSE_MIDI_FILES:
-        file_list = glob.glob(os.path.join(DATASET_FOLDER, "*.mid"))
+        file_list = glob.glob(os.path.join(DATASET_FOLDER, "*.mid*"))
         print(f"Found {len(file_list)} MIDI files")
 
         notes, durations = parse_midi_files(file_list)

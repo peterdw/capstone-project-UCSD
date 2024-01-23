@@ -3,11 +3,13 @@
 import datetime
 import os
 import time
+import sys
 
 import tensorflow as tf
 from tensorflow.keras import callbacks
 
 from constants import DATASET_REPETITIONS, EPOCHS, LOAD_MODEL, SPLIT_RATIO
+from input_preparation import prepare_inputs
 from load_music_data import load_music_data
 from timestamp_callback import TimeStampCallback
 from transformer_model import get_compiled_model, plot_training_history
@@ -15,7 +17,19 @@ from transformer_utils import MusicGenerator, create_dataset
 
 
 def start():
-    # load the midi files
+    # load the midi files and retrieve the notes and durations
+    # notes : [
+    #           'START G:major 3/4TS rest G3 G3 D3 G2 B3 C4 D4 C4 B3 A3 B3 D3 G2 G3 A3 B3 G3 E3 C3 C2 A3 B3 C4 B3 A3 G3 F#3 D3 D2 D3 E3 F#3 G3 A3 B3 C4 B3 C4 A3 C4 B3 C4 A3 D3 C4 B3',
+    #           'G:major 3/4TS rest G3 G3 D3 G2 B3 C4 D4 C4 B3 A3 B3 D3 G2 G3 A3 B3 G3 E3 C3 C2 A3 B3 C4 B3 A3 G3 F#3 D3 D2 D3 E3 F#3 G3 A3 B3 C4 B3 C4 A3 C4 B3 C4 A3 D3 C4 B3 A3',
+    #           '3/4TS rest G3 G3 D3 G2 B3 C4 D4 C4 B3 A3 B3 D3 G2 G3 A3 B3 G3 E3 C3 C2 A3 B3 C4 B3 A3 G3 F#3 D3 D2 D3 E3 F#3 G3 A3 B3 C4 B3 C4 A3 C4 B3 C4 A3 D3 C4 B3 A3 B3',
+    #           ...
+    #         ]
+    # durations: [
+    #               '0.0 0.0 0.0 2.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25',
+    #               '0.0 0.0 2.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25',
+    #               '0.0 2.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.5 0.5 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.5 0.5 0.5 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25',
+    #               ...
+    #            ]
     notes, durations = load_music_data()
 
     # Print a sample of the parsed data
@@ -29,28 +43,12 @@ def start():
     notes_vocab_size = len(notes_vocab)
     durations_vocab_size = len(durations_vocab)
 
-
-    # Create the training set of sequences and the same sequences shifted by one note
-    def prepare_inputs(notes, durations):
-        notes = tf.expand_dims(notes, -1)
-        durations = tf.expand_dims(durations, -1)
-        tokenized_notes = notes_vectorize_layer(notes)
-        tokenized_durations = durations_vectorize_layer(durations)
-        x = (tokenized_notes[:, :-1], tokenized_durations[:, :-1])
-        y = (tokenized_notes[:, 1:], tokenized_durations[:, 1:])
-        return x, y
-
-
-
-
-    ds = seq_ds.map(prepare_inputs).repeat(DATASET_REPETITIONS)
+    ds = seq_ds.map(lambda notes, durations: prepare_inputs(notes, durations, notes_vectorize_layer,
+                                                            durations_vectorize_layer)).repeat(DATASET_REPETITIONS)
 
     model = get_compiled_model(notes_vocab_size, durations_vocab_size)
 
-    # att_model = models.Model(inputs=[note_inputs, durations_inputs], outputs=attention_scores)
-
     model.summary()
-    # music_generator = MusicGenerator(notes_vocab, durations_vocab)
     music_generator = MusicGenerator(model, notes_vocab, durations_vocab)
 
     if LOAD_MODEL:
@@ -99,9 +97,10 @@ def start():
     ########################################
     # Generate music using the Transformer #
     ########################################
+    # sys.exit()
 
     info = music_generator.generate(
-        ["START"], ["0.0"], max_tokens=50, temperature=0.5
+        ["START"], ["0.0"], max_tokens=250, temperature=0.5
     )
 
     midi_stream = info[-1]["midi"].chordify()

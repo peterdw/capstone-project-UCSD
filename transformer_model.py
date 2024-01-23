@@ -5,6 +5,9 @@ from transformer_utils import TokenAndPositionEmbedding, TransformerBlock
 import matplotlib.pyplot as plt
 
 
+# Create the training set of sequences and the same sequences shifted by one note
+
+
 def get_uncompiled_model(notes_vocab_size, durations_vocab_size):
     note_inputs = layers.Input(shape=(None,), dtype=tf.int32)
     durations_inputs = layers.Input(shape=(None,), dtype=tf.int32)
@@ -36,8 +39,8 @@ def get_compiled_model(notes_vocab_size, durations_vocab_size):
     model.compile(
         optimizer='adam',
         loss=[
-            losses.SparseCategoricalCrossentropy(),
-            losses.SparseCategoricalCrossentropy()
+            losses.SparseCategoricalCrossentropy(), # the notes are categorical
+            losses.SparseCategoricalCrossentropy()  # the durations are also categorical
         ],
         metrics={
             'note_outputs': ['accuracy'],
