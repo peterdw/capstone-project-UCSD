@@ -161,3 +161,5 @@ cython_debug/
 data/maestro-v3.0.0/LICENSE
 data/maestro-v3.0.0/README
 /logs/
+/tuning/
+/training_checkpoints/

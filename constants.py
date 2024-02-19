@@ -17,3 +17,11 @@ EPOCHS              = 5000
 GENERATE_LEN        = 50
 LOAD_MODEL          = True
 SPLIT_RATIO         = 0.2
+
+'''
+MAESTRO CONSTANTS 
+'''
+
+_SAMPLING_RATE = 16000
+PLAYBACK_DURATION_SECONDS = 10  # Adjust this value to change the playback duration
+KEY_ORDER = ['pitch', 'step', 'duration']

@@ -1,9 +1,7 @@
 # main.py
-
 import datetime
 import os
 import time
-import sys
 
 import tensorflow as tf
 from tensorflow.keras import callbacks
