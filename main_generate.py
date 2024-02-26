@@ -27,7 +27,7 @@ def start():
     model.summary()
 
     temperature = 2.0
-    num_predictions = 120
+    num_predictions = 50
 
     sample_file = filenames[1]
     raw_notes = music_player.midi_to_notes(sample_file)

@@ -164,6 +164,7 @@ def create_midi_training_dataset(filenames: list[str], num_files: int = None) ->
 
     # create a tf.data.Dataset from the parsed notes
     train_notes = np.stack([all_notes[key] for key in KEY_ORDER], axis=1)
+    print(train_notes)
     notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
     return notes_ds
 

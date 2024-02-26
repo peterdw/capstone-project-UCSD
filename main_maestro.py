@@ -1,5 +1,6 @@
 import pathlib
 import time
+import datetime
 
 import keras_tuner as kt
 import matplotlib.pyplot as plt
@@ -9,8 +10,9 @@ import pretty_midi
 
 from constants import BEST_LSTM_MODEL, MAESTRO_DATASET_FOLDER, SEQ_LENGTH, PITCH_VOCAB_SIZE
 from filenames_singleton import FilenamesSingleton
-from model_builder import create_music_sequence_dataset, create_midi_training_dataset, get_lstm_model
+from model_builder import create_music_sequence_dataset, create_midi_training_dataset, get_lstm_model, build_hypermodel
 from music_player import midi_to_notes
+from tensorflow.keras.callbacks import TensorBoard
 
 
 def start():
@@ -82,20 +84,20 @@ def start():
                 .prefetch(tf.data.experimental.AUTOTUNE))
     print(train_ds.element_spec)
 
-    # val_ds = (val_ds
-    #           .batch(batch_size, drop_remainder=True)  # No need to shuffle validation data
-    #           .cache()
-    #           .prefetch(tf.data.experimental.AUTOTUNE))
-    # print(val_ds.element_spec)
+    val_ds = (val_ds
+              .batch(batch_size, drop_remainder=True)  # No need to shuffle validation data
+              .cache()
+              .prefetch(tf.data.experimental.AUTOTUNE))
+    print(val_ds.element_spec)
 
-    # tuner = kt.RandomSearch(
-    #     build_hypermodel,
-    #     objective='val_loss',
-    #     max_trials=10,
-    #     executions_per_trial=1,
-    #     directory='tuning',
-    #     project_name='lstm_tuning_random_search'
-    # )
+    tuner = kt.RandomSearch(
+        build_hypermodel,
+        objective='val_loss',
+        max_trials=10,
+        executions_per_trial=1,
+        directory='tuning',
+        project_name='lstm_tuning_random_search'
+    )
 
     # tuner = kt.Hyperband(
     #     build_lstm_hypermodel,
@@ -105,18 +107,23 @@ def start():
     #     project_name='lstm_tuning'
     # )
 
-    callbacks = [
-        tf.keras.callbacks.EarlyStopping(
+    # Create a log directory with a timestamp to avoid log overwriting
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+    early_stopping_callback = tf.keras.callbacks.EarlyStopping(
             monitor='loss', patience=5, restore_best_weights=True)
+    callbacks = [
+       early_stopping_callback,
+       tensorboard_callback
     ]
     # Start hyperparameter search
-    # tuner.search(train_ds, epochs=5, validation_data=val_ds, callbacks=callbacks)
+    tuner.search(train_ds, epochs=5, validation_data=val_ds, callbacks=callbacks)
 
     # Get the optimal hyperparameters
-    # best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
-    # print(f"Best learning rate: {best_hps.get('learning_rate')}")
-    # print(f"Best LSTM units: {best_hps.get('units')}")
+    print(f"Best learning rate: {best_hps.get('learning_rate')}")
+    print(f"Best LSTM units: {best_hps.get('units')}")
 
     ###################
     # train THE MODEL #
@@ -126,9 +133,9 @@ def start():
     best_epochs = 50
 
     # Build the model with the best hyperparameters and train it on the data
-    # best_model = tuner.hypermodel.build(best_hps)
+    best_model = tuner.hypermodel.build(best_hps)
 
-    best_model = get_lstm_model()
+    # best_model = get_lstm_model()
 
     history = best_model.fit(train_ds, epochs=best_epochs, callbacks=callbacks)
     end_time = time.time()
