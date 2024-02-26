@@ -4,6 +4,7 @@ import tensorflow as tf
 import keras_nlp
 import music_player
 from constants import KEY_ORDER, SEQ_LENGTH
+from tensorflow.keras.layers import Dense
 
 
 def create_music_generation_lstm_model(hp):
@@ -25,19 +26,18 @@ def create_music_generation_lstm_model(hp):
     x = tf.keras.layers.LSTM(lstm_units)(inputs)
 
     # Output layers
-    pitch_output = tf.keras.layers.Dense(128, activation='softmax', name='pitch')(x)
-    step_output = tf.keras.layers.Dense(1, name='step')(x)
-    duration_output = tf.keras.layers.Dense(1, name='duration')(x)
+    pitch_output = Dense(128, activation='softmax', name='pitch')(x)
+    step_output = Dense(1, activation='softplus', name='step')(x)
+    duration_output = Dense(1, activation='softplus', name='duration')(x)
 
-    # model = tf.keras.Model(inputs=inputs, outputs=[pitch_output, step_output, duration_output])
     model = tf.keras.Model(inputs=inputs,
                            outputs={'pitch': pitch_output, 'step': step_output, 'duration': duration_output})
 
     # Define loss functions for each output
     loss = {
         'pitch': tf.keras.losses.SparseCategoricalCrossentropy(),
-        'step': mean_squared_error_with_penalty_for_negatives,
-        'duration': mean_squared_error_with_penalty_for_negatives,
+        'step': 'mean_squared_error',
+        'duration': 'mean_squared_error',
     }
 
     # Learning rate
