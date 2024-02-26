@@ -27,8 +27,8 @@ def create_music_generation_lstm_model(hp):
 
     # Output layers
     pitch_output = Dense(128, activation='softmax', name='pitch')(x)
-    step_output = Dense(1, activation='softplus', name='step')(x)
-    duration_output = Dense(1, activation='softplus', name='duration')(x)
+    step_output = Dense(1, name='step')(x)
+    duration_output = Dense(1, name='duration')(x)
 
     model = tf.keras.Model(inputs=inputs,
                            outputs={'pitch': pitch_output, 'step': step_output, 'duration': duration_output})
@@ -36,8 +36,8 @@ def create_music_generation_lstm_model(hp):
     # Define loss functions for each output
     loss = {
         'pitch': tf.keras.losses.SparseCategoricalCrossentropy(),
-        'step': 'mean_squared_error',
-        'duration': 'mean_squared_error',
+        'step': mean_squared_error_with_penalty_for_negatives,
+        'duration': mean_squared_error_with_penalty_for_negatives,
     }
 
     # Learning rate
