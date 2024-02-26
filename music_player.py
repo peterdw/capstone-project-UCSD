@@ -216,13 +216,10 @@ def piano_roll_to_png(notes: pd.DataFrame, count: int = None):
 def notes_to_midi(
         notes: pd.DataFrame,
         out_file: str,
-        instrument_name: str,
         velocity: int = 100,  # note loudness
 ) -> pretty_midi.PrettyMIDI:
     pm = pretty_midi.PrettyMIDI()
-    instrument = pretty_midi.Instrument(
-        program=pretty_midi.instrument_name_to_program(
-            instrument_name))
+    instrument = pretty_midi.Instrument(program=0)
 
     prev_start = 0
     for i, note in notes.iterrows():

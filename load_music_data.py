@@ -5,7 +5,7 @@ import glob
 import pickle
 import music21
 from music21 import converter
-from constants import DATASET_FOLDER, PARSE_MIDI_FILES, NOTES_FILE, DURATIONS_FILE, SEQ_LEN
+from constants import CELLO_DATASET_FOLDER, PARSE_MIDI_FILES, NOTES_FILE, DURATIONS_FILE, SEQ_LEN
 import pretty_midi
 import numpy as np
 
@@ -67,7 +67,7 @@ def parse_midi_files(file_list):
 
 def load_music_data():
     if PARSE_MIDI_FILES:
-        file_list = glob.glob(os.path.join(DATASET_FOLDER, "*.mid*"))
+        file_list = glob.glob(os.path.join(CELLO_DATASET_FOLDER, '**/*.mid*'))
         print(f"Found {len(file_list)} MIDI files")
 
         notes, durations = parse_midi_files(file_list)
